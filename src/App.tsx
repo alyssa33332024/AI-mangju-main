@@ -189,7 +189,7 @@ const MyProjectsSection = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {projects.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-surface-container-high bg-surface-container-low p-6 text-sm text-on-surface-variant">
-              还没有已保存项目，先在流程里编辑后点击“保存当前项目”。
+              还没有已保存项目
             </div>
           ) : (
             projects.map((project) => (
@@ -233,7 +233,7 @@ const MyProjectsSection = ({
   );
 };
 
-const CreatorSection = ({ onStartCreating }: { onStartCreating: () => void }) => {
+const CreatorSection = ({ onStartCreating }: { onStartCreating: (payload: { text: string; style: string; ratio: "16:9" | "9:16" }) => void }) => {
   const [prompt, setPrompt] = useState('');
   const [videoStyle, setVideoStyle] = useState('3DCG动画东方奇幻');
   const [aspectRatio, setAspectRatio] = useState('16:9');
@@ -336,7 +336,7 @@ const CreatorSection = ({ onStartCreating }: { onStartCreating: () => void }) =>
 
         <div className="flex justify-center">
           <button 
-            onClick={onStartCreating}
+            onClick={() => onStartCreating({ text: prompt, style: videoStyle, ratio: aspectRatio as "16:9" | "9:16" })}
             className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/30 px-12 py-5 rounded-full font-bold text-lg flex items-center gap-3 group transition-all duration-300"
           >
             开始创作
@@ -348,15 +348,7 @@ const CreatorSection = ({ onStartCreating }: { onStartCreating: () => void }) =>
   );
 };
 
-const GenerationView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, scriptContent, onScriptChange, onConfirm, skipLoading = false }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, scriptContent: string, onScriptChange: (content: string) => void, onConfirm: () => void, skipLoading?: boolean }) => {
-  const [isGenerating, setIsGenerating] = useState(!skipLoading);
-
-  // Simulate generation completion for demo purposes
-  React.useEffect(() => {
-    if (skipLoading) return;
-    const timer = setTimeout(() => setIsGenerating(false), 3000);
-    return () => clearTimeout(timer);
-  }, [skipLoading]);
+const GenerationView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, scriptContent, onScriptChange, onConfirm, isGenerating }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, scriptContent: string, onScriptChange: (content: string) => void, onConfirm: () => void, isGenerating: boolean }) => {
 
   return (
     <div className="min-h-screen bg-surface flex flex-col font-body">
@@ -430,7 +422,7 @@ const GenerationView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReach
                       onClick={onConfirm}
                       className="bg-on-surface hover:bg-black text-surface px-10 py-4 rounded-2xl font-bold tracking-widest text-base shadow-xl active:scale-95 transition-all flex items-center gap-2 group"
                     >
-                      确认剧本
+                      生成分镜图
                       <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
@@ -759,6 +751,35 @@ const DEFAULT_STORYBOARD_VIDEO_SHOTS: ShotItem[] = [
   { id: 4, title: '镜头 4: 仰视视角', description: '巨大的全息广告牌投射出刺眼的光芒。', prompt: '巨大的全息广告牌投射出刺眼的光芒。', progress: 100, imageUrl: 'https://picsum.photos/seed/storyboard-video-4/1280/720' }
 ];
 
+type BackendShot = {
+  shotNumber: number;
+  title: string;
+  imagePrompt: string;
+  videoPrompt: string;
+};
+
+const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:8787";
+
+const createShotItems = (shots: BackendShot[]): ShotItem[] =>
+  shots.map((shot, idx) => ({
+    id: idx + 1,
+    title: shot.title || `镜头 ${idx + 1}`,
+    description: "",
+    prompt: shot.imagePrompt || "",
+    progress: 0,
+    imageUrl: ""
+  }));
+
+const postJson = async <T,>(path: string, body: unknown): Promise<T> => {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) throw new Error(`Request failed: ${path}`);
+  return response.json() as Promise<T>;
+};
+
 const downloadImage = async (url: string, fileName: string) => {
   try {
     const response = await fetch(url);
@@ -776,17 +797,7 @@ const downloadImage = async (url: string, fileName: string) => {
   }
 };
 
-const StoryboardCard = ({
-  item,
-  isExpanded,
-  isZoomed,
-  isRegenerating,
-  onTogglePrompt,
-  onPromptChange,
-  onToggleZoom,
-  onRegenerate,
-  onDownload
-}: {
+type StoryboardCardProps = {
   item: ShotItem;
   isExpanded: boolean;
   isZoomed: boolean;
@@ -796,6 +807,18 @@ const StoryboardCard = ({
   onToggleZoom: () => void;
   onRegenerate: () => void;
   onDownload: () => void;
+};
+
+const StoryboardCard: React.FC<StoryboardCardProps> = ({
+  item,
+  isExpanded,
+  isZoomed,
+  isRegenerating,
+  onTogglePrompt,
+  onPromptChange,
+  onToggleZoom,
+  onRegenerate,
+  onDownload
 }) => {
   const strokeOffset = 175.9 * (1 - item.progress / 100);
 
@@ -886,9 +909,8 @@ const StoryboardCard = ({
               />
               <button
                 onClick={onRegenerate}
-                className="absolute bottom-4 right-2 text-primary/65 hover:text-primary/85 transition-colors"
+                className="absolute bottom-4 right-4 text-primary/65 hover:text-primary/85 transition-colors"
                 aria-label="重新生成"
-                title="重新生成"
               >
                 <RefreshCw size={11} className={isRegenerating ? 'animate-spin' : ''} />
               </button>
@@ -907,16 +929,20 @@ const StoryboardView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReach
 
   const regenerateShot = (id: number) => {
     setRegeneratingIds((prev) => [...prev, id]);
-    setTimeout(() => {
-      onShotsChange(
-        shots.map((item) =>
-          item.id === id
-            ? { ...item, progress: 100, imageUrl: `https://picsum.photos/seed/storyboard-${id}-${Date.now()}/1280/720` }
-            : item
-        )
-      );
-      setRegeneratingIds((prev) => prev.filter((currentId) => currentId !== id));
-    }, 1200);
+    const target = shots.find((item) => item.id === id);
+    if (!target) return;
+    postJson<{ results: Array<{ shotNumber: number; imageUrl: string }> }>("/api/storyboard/generate-images", {
+      shots: [{ shotNumber: id, imagePrompt: target.prompt }]
+    })
+      .then((data) => {
+        const url = data.results?.[0]?.imageUrl || "";
+        onShotsChange(
+          shots.map((item) => (item.id === id ? { ...item, progress: 100, imageUrl: url || item.imageUrl } : item))
+        );
+      })
+      .finally(() => {
+        setRegeneratingIds((prev) => prev.filter((currentId) => currentId !== id));
+      });
   };
 
   return (
@@ -945,7 +971,9 @@ const StoryboardView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReach
               }
               onToggleZoom={() => setZoomedShotId((prev) => (prev === item.id ? null : item.id))}
               onRegenerate={() => regenerateShot(item.id)}
-              onDownload={() => downloadImage(item.imageUrl, `storyboard-shot-${item.id}.png`)}
+              onDownload={() => {
+                void downloadImage(item.imageUrl, `storyboard-shot-${item.id}.png`);
+              }}
             />
           ))}
         </div>
@@ -974,16 +1002,20 @@ const StoryboardVideoView = ({ onBack, onHome, onStepClick, canStepNavigate, max
 
   const regenerateShot = (id: number) => {
     setRegeneratingIds((prev) => [...prev, id]);
-    setTimeout(() => {
-      onShotsChange(
-        shots.map((item) =>
-          item.id === id
-            ? { ...item, progress: 100, imageUrl: `https://picsum.photos/seed/storyboard-video-${id}-${Date.now()}/1280/720` }
-            : item
-        )
-      );
-      setRegeneratingIds((prev) => prev.filter((currentId) => currentId !== id));
-    }, 1200);
+    const target = shots.find((item) => item.id === id);
+    if (!target) return;
+    postJson<{ results: Array<{ shotNumber: number; imageUrl: string }> }>("/api/storyboard/generate-images", {
+      shots: [{ shotNumber: id, imagePrompt: target.prompt }]
+    })
+      .then((data) => {
+        const url = data.results?.[0]?.imageUrl || "";
+        onShotsChange(
+          shots.map((item) => (item.id === id ? { ...item, progress: 100, imageUrl: url || item.imageUrl } : item))
+        );
+      })
+      .finally(() => {
+        setRegeneratingIds((prev) => prev.filter((currentId) => currentId !== id));
+      });
   };
 
   return (
@@ -1012,7 +1044,9 @@ const StoryboardVideoView = ({ onBack, onHome, onStepClick, canStepNavigate, max
               }
               onToggleZoom={() => setZoomedShotId((prev) => (prev === item.id ? null : item.id))}
               onRegenerate={() => regenerateShot(item.id)}
-              onDownload={() => downloadImage(item.imageUrl, `storyboard-video-shot-${item.id}.png`)}
+              onDownload={() => {
+                void downloadImage(item.imageUrl, `storyboard-video-shot-${item.id}.png`);
+              }}
             />
           ))}
         </div>
@@ -1038,9 +1072,14 @@ export default function App() {
   const [hasGeneratedScript, setHasGeneratedScript] = useState(false);
   const [hasUnlockedStepNav, setHasUnlockedStepNav] = useState(false);
   const [maxReachedStep, setMaxReachedStep] = useState(1);
+  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+  const [forceShowScriptEditor, setForceShowScriptEditor] = useState(false);
+  const [selectedRatio, setSelectedRatio] = useState<"16:9" | "9:16">("16:9");
   const [scriptContent, setScriptContent] = useState(DEFAULT_SCRIPT_CONTENT);
   const [storyboardShots, setStoryboardShots] = useState<ShotItem[]>(DEFAULT_STORYBOARD_SHOTS);
   const [storyboardVideoShots, setStoryboardVideoShots] = useState<ShotItem[]>(DEFAULT_STORYBOARD_VIDEO_SHOTS);
+  const [videoPrompts, setVideoPrompts] = useState<Record<number, string>>({});
   const [projects, setProjects] = useState<SavedProject[]>([]);
 
   useEffect(() => {
@@ -1089,8 +1128,139 @@ export default function App() {
     setProjects((prev) => prev.filter((item) => item.id !== projectId));
   };
 
+  const parseShotsFromScriptText = (script: string) => {
+    const shots: BackendShot[] = [];
+    const completeShots: BackendShot[] = [];
+    const hasCompleteGridPrompt = (text: string) => {
+      const normalized = text.replace(/\s+/g, "");
+      return (
+        /格1[:：]/.test(normalized) &&
+        /格2[:：]/.test(normalized) &&
+        /格3[:：]/.test(normalized) &&
+        /格4[:：]/.test(normalized)
+      );
+    };
+    const shotRegex = /镜头\s*([0-9]+)[：:]\s*([^\n]+)[\s\S]*?(?=镜头\s*[0-9]+[：:]|$)/g;
+    let match: RegExpExecArray | null;
+    while ((match = shotRegex.exec(script)) !== null) {
+      const shotNumber = Number(match[1]);
+      const title = `镜头 ${shotNumber}: ${match[2].trim()}`;
+      const block = match[0];
+      const imagePromptMatch = block.match(/AI\s*绘画提示词[\s\S]*?格1[:：][\s\S]*?(?=Sora2\s*视频描述[:：]|镜头\s*[0-9]+[：:]|$)/i);
+      const videoPromptMatch = block.match(/Sora2\s*视频描述[:：]([\s\S]*?)$/i);
+      const imagePrompt = imagePromptMatch?.[0]?.trim() || "";
+      const parsedShot = {
+        shotNumber,
+        title,
+        imagePrompt,
+        videoPrompt: videoPromptMatch?.[1]?.trim() || ""
+      };
+      shots.push(parsedShot);
+      if (hasCompleteGridPrompt(imagePrompt || block)) {
+        completeShots.push(parsedShot);
+      }
+    }
+    return completeShots.length > 0 ? completeShots : shots;
+  };
+
+  const startCreateFlow = async (payload: { text: string; style: string; ratio: "16:9" | "9:16" }) => {
+    setHasGeneratedScript(false);
+    setHasUnlockedStepNav(false);
+    setMaxReachedStep(1);
+    setSelectedRatio(payload.ratio);
+    setForceShowScriptEditor(false);
+    setView('GENERATING');
+    setIsGeneratingScript(true);
+
+    try {
+      const data = await postJson<{ script: string; shots: BackendShot[] }>("/api/script/generate", {
+        text: payload.text,
+        style: payload.style
+      });
+
+      const parsedShots = data.shots?.length > 0 ? data.shots : parseShotsFromScriptText(data.script);
+      const shotItems = createShotItems(parsedShots);
+      const promptsMap: Record<number, string> = {};
+      parsedShots.forEach((shot, idx) => {
+        promptsMap[idx + 1] = shot.videoPrompt || "";
+      });
+
+      setScriptContent(data.script || payload.text);
+      setStoryboardShots(shotItems);
+      setStoryboardVideoShots(shotItems.map((item) => ({ ...item })));
+      setVideoPrompts(promptsMap);
+      setHasGeneratedScript(true);
+    } catch (error) {
+      console.error(error);
+      setScriptContent("剧本生成失败");
+    } finally {
+      setIsGeneratingScript(false);
+    }
+  };
+
+  const generateStoryboardImagesFromScript = async () => {
+    const parsedShots = parseShotsFromScriptText(scriptContent);
+    let source = parsedShots.length > 0 ? parsedShots : storyboardShots.map((shot) => ({
+      shotNumber: shot.id,
+      title: shot.title,
+      imagePrompt: shot.prompt,
+      videoPrompt: videoPrompts[shot.id] || ""
+    }));
+    if (source.length === 0) {
+      source = [
+        {
+          shotNumber: 1,
+          title: "镜头 1: 自动拆分",
+          imagePrompt: scriptContent,
+          videoPrompt: ""
+        }
+      ];
+    }
+    const shotItems = createShotItems(source);
+    setStoryboardShots(shotItems);
+    setStoryboardVideoShots(shotItems.map((item) => ({ ...item })));
+    setIsGeneratingImages(true);
+    try {
+      const data = await postJson<{ results: Array<{ shotNumber: number; imageUrl: string }> }>("/api/storyboard/generate-images", {
+        shots: source.map((s) => ({ shotNumber: s.shotNumber, imagePrompt: s.imagePrompt }))
+      });
+      const urlMap = new Map<number, string>(data.results.map((r) => [r.shotNumber, r.imageUrl]));
+      const merged = shotItems.map((item, idx) => ({
+        ...item,
+        progress: 100,
+        imageUrl: urlMap.get(idx + 1) || item.imageUrl
+      }));
+      setStoryboardShots(merged);
+      setStoryboardVideoShots(merged.map((item) => ({ ...item })));
+      const promptsMap: Record<number, string> = {};
+      source.forEach((shot, idx) => {
+        promptsMap[idx + 1] = shot.videoPrompt || "";
+      });
+      setVideoPrompts(promptsMap);
+    } finally {
+      setIsGeneratingImages(false);
+    }
+  };
+
+  const generateVideosByShots = async () => {
+    try {
+      await postJson("/api/storyboard/generate-videos", {
+        ratio: selectedRatio,
+        shots: storyboardVideoShots.map((shot) => ({
+          shotNumber: shot.id,
+          imageUrl: shot.imageUrl,
+          imagePrompt: shot.prompt,
+          videoPrompt: videoPrompts[shot.id] || ""
+        }))
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const goHome = () => {
     setView('HOME');
+    setForceShowScriptEditor(false);
   };
   const goToStep = (step: number) => {
     if (!hasUnlockedStepNav) return;
@@ -1104,7 +1274,6 @@ export default function App() {
       case 'GENERATING':
         return (
           <GenerationView 
-            skipLoading={hasGeneratedScript}
             onBack={goHome}
             onHome={goHome}
             onStepClick={goToStep}
@@ -1112,7 +1281,14 @@ export default function App() {
             maxReachedStep={maxReachedStep}
             scriptContent={scriptContent}
             onScriptChange={setScriptContent}
-            onConfirm={() => {
+            isGenerating={(isGeneratingScript || isGeneratingImages) && !forceShowScriptEditor}
+            onConfirm={async () => {
+              setForceShowScriptEditor(true);
+              try {
+                await generateStoryboardImagesFromScript();
+              } catch (error) {
+                console.error(error);
+              }
               setHasGeneratedScript(true);
               setHasUnlockedStepNav(true);
               setMaxReachedStep((prev) => Math.max(prev, 2));
@@ -1146,8 +1322,10 @@ export default function App() {
             maxReachedStep={maxReachedStep}
             shots={storyboardVideoShots}
             onShotsChange={setStoryboardVideoShots}
-            onConfirm={() => {
+            onConfirm={async () => {
+              await generateVideosByShots();
               saveCurrentProject();
+              setForceShowScriptEditor(false);
               setView('HOME');
             }}
           />
@@ -1159,15 +1337,7 @@ export default function App() {
             
             <main>
               <Hero />
-              <CreatorSection onStartCreating={() => {
-                setHasGeneratedScript(false);
-                setHasUnlockedStepNav(false);
-                setMaxReachedStep(1);
-                setScriptContent(DEFAULT_SCRIPT_CONTENT);
-                setStoryboardShots(DEFAULT_STORYBOARD_SHOTS);
-                setStoryboardVideoShots(DEFAULT_STORYBOARD_VIDEO_SHOTS);
-                setView('GENERATING');
-              }} />
+              <CreatorSection onStartCreating={startCreateFlow} />
               <MyProjectsSection
                 projects={projects}
                 onOpenProject={openProject}
