@@ -335,20 +335,26 @@ const CreatorSection = ({ onStartCreating }: { onStartCreating: (payload: { text
         </div>
 
         <div className="flex justify-center">
+          {(() => {
+            const canStart = prompt.trim().length > 0;
+            return (
           <button 
             onClick={() => onStartCreating({ text: prompt, style: videoStyle, ratio: aspectRatio as "16:9" | "9:16" })}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/30 px-12 py-5 rounded-full font-bold text-lg flex items-center gap-3 group transition-all duration-300"
+            disabled={!canStart}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/30 px-12 py-5 rounded-full font-bold text-lg flex items-center gap-3 group transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-600 disabled:hover:to-indigo-600"
           >
             开始创作
             <Zap size={20} className="group-hover:animate-pulse" />
           </button>
+            );
+          })()}
         </div>
       </motion.div>
     </section>
   );
 };
 
-const GenerationView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, scriptContent, onScriptChange, onConfirm, isGenerating }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, scriptContent: string, onScriptChange: (content: string) => void, onConfirm: () => void, isGenerating: boolean }) => {
+const GenerationView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, scriptContent, onScriptChange, onConfirm, isGenerating, canProceed }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, scriptContent: string, onScriptChange: (content: string) => void, onConfirm: () => void, isGenerating: boolean, canProceed: boolean }) => {
 
   return (
     <div className="min-h-screen bg-surface flex flex-col font-body">
@@ -420,7 +426,8 @@ const GenerationView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReach
                   <div className="flex items-center gap-6">
                     <button 
                       onClick={onConfirm}
-                      className="bg-on-surface hover:bg-black text-surface px-10 py-4 rounded-2xl font-bold tracking-widest text-base shadow-xl active:scale-95 transition-all flex items-center gap-2 group"
+                      disabled={!canProceed}
+                      className="bg-on-surface hover:bg-black text-surface px-10 py-4 rounded-2xl font-bold tracking-widest text-base shadow-xl active:scale-95 transition-all flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-on-surface"
                     >
                       生成分镜图
                       <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
@@ -732,6 +739,7 @@ type SavedProject = {
   scriptContent: string;
   storyboardShots: ShotItem[];
   storyboardVideoShots: ShotItem[];
+  videoUrls?: Record<number, string>;
 };
 
 const DEFAULT_SCRIPT_CONTENT =
@@ -802,6 +810,8 @@ type StoryboardCardProps = {
   isExpanded: boolean;
   isZoomed: boolean;
   isRegenerating: boolean;
+  mediaType?: "image" | "video";
+  mediaUrl?: string;
   onTogglePrompt: () => void;
   onPromptChange: (value: string) => void;
   onToggleZoom: () => void;
@@ -814,6 +824,8 @@ const StoryboardCard: React.FC<StoryboardCardProps> = ({
   isExpanded,
   isZoomed,
   isRegenerating,
+  mediaType = "image",
+  mediaUrl,
   onTogglePrompt,
   onPromptChange,
   onToggleZoom,
@@ -866,12 +878,21 @@ const StoryboardCard: React.FC<StoryboardCardProps> = ({
           </div>
         ) : (
           <>
-            <img
-              alt={item.title}
-              className={`w-full h-full transition-all duration-300 ${isZoomed ? 'object-contain bg-surface-container-lowest' : 'object-cover'}`}
-              src={item.imageUrl}
-              referrerPolicy="no-referrer"
-            />
+            {mediaType === "video" && mediaUrl ? (
+              <video
+                className={`w-full h-full transition-all duration-300 ${isZoomed ? 'object-contain bg-surface-container-lowest' : 'object-cover'}`}
+                src={mediaUrl}
+                controls
+                preload="metadata"
+              />
+            ) : (
+              <img
+                alt={item.title}
+                className={`w-full h-full transition-all duration-300 ${isZoomed ? 'object-contain bg-surface-container-lowest' : 'object-cover'}`}
+                src={item.imageUrl}
+                referrerPolicy="no-referrer"
+              />
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -922,7 +943,7 @@ const StoryboardCard: React.FC<StoryboardCardProps> = ({
   );
 };
 
-const StoryboardView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, shots, onShotsChange, onConfirm }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, shots: ShotItem[], onShotsChange: (shots: ShotItem[]) => void, onConfirm: () => void }) => {
+const StoryboardView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, shots, onShotsChange, onConfirm, canProceed }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, shots: ShotItem[], onShotsChange: (shots: ShotItem[]) => void, onConfirm: () => void, canProceed: boolean }) => {
   const [expandedPromptId, setExpandedPromptId] = useState<number | null>(1);
   const [zoomedShotId, setZoomedShotId] = useState<number | null>(null);
   const [regeneratingIds, setRegeneratingIds] = useState<number[]>([]);
@@ -982,7 +1003,8 @@ const StoryboardView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReach
       <div className="px-12 py-6 bg-surface border-t border-surface-container flex justify-end items-center sticky bottom-0 z-10">
         <button 
           onClick={onConfirm}
-          className="bg-on-surface hover:bg-black text-surface px-10 py-4 rounded-2xl font-bold tracking-widest text-base shadow-xl active:scale-95 transition-all flex items-center gap-2 group"
+          disabled={!canProceed}
+          className="bg-on-surface hover:bg-black text-surface px-10 py-4 rounded-2xl font-bold tracking-widest text-base shadow-xl active:scale-95 transition-all flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-on-surface"
         >
           生成视频
           <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
@@ -995,7 +1017,7 @@ const StoryboardView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReach
   );
 };
 
-const StoryboardVideoView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, shots, onShotsChange, onConfirm }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, shots: ShotItem[], onShotsChange: (shots: ShotItem[]) => void, onConfirm: () => void }) => {
+const StoryboardVideoView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, shots, videoUrls, isGeneratingVideos, onShotsChange, onConfirm, canProceed }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, shots: ShotItem[], videoUrls: Record<number, string>, isGeneratingVideos: boolean, onShotsChange: (shots: ShotItem[]) => void, onConfirm: () => void, canProceed: boolean }) => {
   const [expandedPromptId, setExpandedPromptId] = useState<number | null>(1);
   const [zoomedShotId, setZoomedShotId] = useState<number | null>(null);
   const [regeneratingIds, setRegeneratingIds] = useState<number[]>([]);
@@ -1037,7 +1059,9 @@ const StoryboardVideoView = ({ onBack, onHome, onStepClick, canStepNavigate, max
               item={item}
               isExpanded={expandedPromptId === item.id}
               isZoomed={zoomedShotId === item.id}
-              isRegenerating={regeneratingIds.includes(item.id)}
+              isRegenerating={regeneratingIds.includes(item.id) || (isGeneratingVideos && !videoUrls[item.id])}
+              mediaType="video"
+              mediaUrl={videoUrls[item.id]}
               onTogglePrompt={() => setExpandedPromptId((prev) => (prev === item.id ? null : item.id))}
               onPromptChange={(value) =>
                 onShotsChange(shots.map((shot) => (shot.id === item.id ? { ...shot, prompt: value } : shot)))
@@ -1045,7 +1069,11 @@ const StoryboardVideoView = ({ onBack, onHome, onStepClick, canStepNavigate, max
               onToggleZoom={() => setZoomedShotId((prev) => (prev === item.id ? null : item.id))}
               onRegenerate={() => regenerateShot(item.id)}
               onDownload={() => {
-                void downloadImage(item.imageUrl, `storyboard-video-shot-${item.id}.png`);
+                if (videoUrls[item.id]) {
+                  void downloadImage(videoUrls[item.id], `storyboard-video-shot-${item.id}.mp4`);
+                } else {
+                  void downloadImage(item.imageUrl, `storyboard-video-shot-${item.id}.png`);
+                }
               }}
             />
           ))}
@@ -1055,7 +1083,8 @@ const StoryboardVideoView = ({ onBack, onHome, onStepClick, canStepNavigate, max
       <div className="px-12 py-6 bg-surface border-t border-surface-container flex justify-end items-center sticky bottom-0 z-10">
         <button 
           onClick={onConfirm}
-          className="bg-on-surface hover:bg-black text-surface px-10 py-4 rounded-2xl font-bold tracking-widest text-base shadow-xl active:scale-95 transition-all"
+          disabled={!canProceed}
+          className="bg-on-surface hover:bg-black text-surface px-10 py-4 rounded-2xl font-bold tracking-widest text-base shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-on-surface"
         >
           完成
         </button>
@@ -1076,10 +1105,12 @@ export default function App() {
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
   const [forceShowScriptEditor, setForceShowScriptEditor] = useState(false);
   const [selectedRatio, setSelectedRatio] = useState<"16:9" | "9:16">("16:9");
+  const [isGeneratingVideos, setIsGeneratingVideos] = useState(false);
   const [scriptContent, setScriptContent] = useState(DEFAULT_SCRIPT_CONTENT);
   const [storyboardShots, setStoryboardShots] = useState<ShotItem[]>(DEFAULT_STORYBOARD_SHOTS);
   const [storyboardVideoShots, setStoryboardVideoShots] = useState<ShotItem[]>(DEFAULT_STORYBOARD_VIDEO_SHOTS);
   const [videoPrompts, setVideoPrompts] = useState<Record<number, string>>({});
+  const [videoUrls, setVideoUrls] = useState<Record<number, string>>({});
   const [projects, setProjects] = useState<SavedProject[]>([]);
 
   useEffect(() => {
@@ -1107,7 +1138,8 @@ export default function App() {
       coverImage: storyboardVideoShots[0]?.imageUrl || storyboardShots[0]?.imageUrl || 'https://picsum.photos/seed/final-video-poster/1200/675',
       scriptContent,
       storyboardShots,
-      storyboardVideoShots
+      storyboardVideoShots,
+      videoUrls
     };
     setProjects((prev) => [project, ...prev]);
   };
@@ -1118,6 +1150,7 @@ export default function App() {
     setScriptContent(project.scriptContent);
     setStoryboardShots(project.storyboardShots);
     setStoryboardVideoShots(project.storyboardVideoShots);
+    setVideoUrls(project.videoUrls || {});
     setHasGeneratedScript(true);
     setHasUnlockedStepNav(true);
     setMaxReachedStep(3);
@@ -1140,11 +1173,13 @@ export default function App() {
         /格4[:：]/.test(normalized)
       );
     };
-    const shotRegex = /镜头\s*([0-9]+)[：:]\s*([^\n]+)[\s\S]*?(?=镜头\s*[0-9]+[：:]|$)/g;
+    // 兼容“镜头1: 标题”“镜头 2 标题”“镜头3”后直接换行等格式
+    const shotRegex = /镜头\s*([0-9]+)\s*(?:[：:]\s*([^\n]*))?[\s\S]*?(?=镜头\s*[0-9]+\s*(?:[：:]|$)|$)/g;
     let match: RegExpExecArray | null;
     while ((match = shotRegex.exec(script)) !== null) {
       const shotNumber = Number(match[1]);
-      const title = `镜头 ${shotNumber}: ${match[2].trim()}`;
+      const rawTitle = (match[2] || "").trim();
+      const title = rawTitle ? `镜头 ${shotNumber}: ${rawTitle}` : `镜头 ${shotNumber}`;
       const block = match[0];
       const imagePromptMatch = block.match(/AI\s*绘画提示词[\s\S]*?格1[:：][\s\S]*?(?=Sora2\s*视频描述[:：]|镜头\s*[0-9]+[：:]|$)/i);
       const videoPromptMatch = block.match(/Sora2\s*视频描述[:：]([\s\S]*?)$/i);
@@ -1243,8 +1278,44 @@ export default function App() {
   };
 
   const generateVideosByShots = async () => {
+    const extractTaskId = (task: any): string => {
+      return (
+        task?.id ||
+        task?.task_id ||
+        task?.taskId ||
+        task?.data?.id ||
+        task?.data?.task_id ||
+        ""
+      );
+    };
+    const findVideoUrlDeep = (input: any): string => {
+      if (!input) return "";
+      if (typeof input === "string") {
+        if (input.includes(".mp4") || input.includes("video")) return input;
+        return "";
+      }
+      if (Array.isArray(input)) {
+        for (const item of input) {
+          const result = findVideoUrlDeep(item);
+          if (result) return result;
+        }
+        return "";
+      }
+      if (typeof input === "object") {
+        if (typeof input.url === "string" && (input.url.includes(".mp4") || input.url.includes("video"))) {
+          return input.url;
+        }
+        for (const key of Object.keys(input)) {
+          const result = findVideoUrlDeep(input[key]);
+          if (result) return result;
+        }
+      }
+      return "";
+    };
+
+    setIsGeneratingVideos(true);
     try {
-      await postJson("/api/storyboard/generate-videos", {
+      const created = await postJson<{ tasks: Array<{ shotNumber: number; task: any }> }>("/api/storyboard/generate-videos", {
         ratio: selectedRatio,
         shots: storyboardVideoShots.map((shot) => ({
           shotNumber: shot.id,
@@ -1253,8 +1324,34 @@ export default function App() {
           videoPrompt: videoPrompts[shot.id] || ""
         }))
       });
+
+      const pollOneTask = async (shotNumber: number, taskId: string): Promise<[number, string]> => {
+        for (let i = 0; i < 60; i += 1) {
+          const task = await fetch(`${API_BASE}/api/storyboard/video-task/${taskId}`).then((r) => r.json());
+          const videoUrl = findVideoUrlDeep(task);
+          if (videoUrl) return [shotNumber, videoUrl];
+          const status = (task?.status || task?.data?.status || "").toString().toLowerCase();
+          if (status.includes("fail") || status.includes("error")) return [shotNumber, ""];
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+        return [shotNumber, ""];
+      };
+
+      const pairs = await Promise.all(
+        (created.tasks || [])
+          .map((item) => ({ shotNumber: item.shotNumber, taskId: extractTaskId(item.task) }))
+          .filter((item) => item.taskId)
+          .map((item) => pollOneTask(item.shotNumber, item.taskId))
+      );
+      const newUrls: Record<number, string> = {};
+      pairs.forEach(([shotNumber, url]) => {
+        if (url) newUrls[shotNumber] = url;
+      });
+      setVideoUrls((prev) => ({ ...prev, ...newUrls }));
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsGeneratingVideos(false);
     }
   };
 
@@ -1282,17 +1379,16 @@ export default function App() {
             scriptContent={scriptContent}
             onScriptChange={setScriptContent}
             isGenerating={(isGeneratingScript || isGeneratingImages) && !forceShowScriptEditor}
-            onConfirm={async () => {
+            canProceed={!isGeneratingScript && !isGeneratingImages && scriptContent.trim().length > 0 && scriptContent !== "剧本生成失败"}
+            onConfirm={() => {
               setForceShowScriptEditor(true);
-              try {
-                await generateStoryboardImagesFromScript();
-              } catch (error) {
-                console.error(error);
-              }
               setHasGeneratedScript(true);
               setHasUnlockedStepNav(true);
               setMaxReachedStep((prev) => Math.max(prev, 2));
               setView('STORYBOARD');
+              void generateStoryboardImagesFromScript().catch((error) => {
+                console.error(error);
+              });
             }}
           />
         );
@@ -1306,9 +1402,11 @@ export default function App() {
             maxReachedStep={maxReachedStep}
             shots={storyboardShots}
             onShotsChange={setStoryboardShots}
+            canProceed={!isGeneratingImages && storyboardShots.length > 0 && storyboardShots.every((shot) => Boolean(shot.imageUrl))}
             onConfirm={() => {
               setMaxReachedStep((prev) => Math.max(prev, 3));
               setView('STORYBOARD_VIDEO');
+              void generateVideosByShots();
             }}
           />
         );
@@ -1321,9 +1419,11 @@ export default function App() {
             canStepNavigate={hasUnlockedStepNav}
             maxReachedStep={maxReachedStep}
             shots={storyboardVideoShots}
+            videoUrls={videoUrls}
+            isGeneratingVideos={isGeneratingVideos}
             onShotsChange={setStoryboardVideoShots}
+            canProceed={!isGeneratingVideos && storyboardVideoShots.length > 0 && storyboardVideoShots.every((shot) => Boolean(videoUrls[shot.id]))}
             onConfirm={async () => {
-              await generateVideosByShots();
               saveCurrentProject();
               setForceShowScriptEditor(false);
               setView('HOME');

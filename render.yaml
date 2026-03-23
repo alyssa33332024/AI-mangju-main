@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-mangju-backend
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install
+    startCommand: npm run dev:server
+    envVars:
+      - key: ARK_API_KEY
+        sync: false
+      - key: SERVER_PORT
+        value: "10000"

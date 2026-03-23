@@ -123,7 +123,7 @@ app.get("/api/storyboard/video-task/:taskId", async (req, res) => {
   }
 });
 
-const port = Number(process.env.SERVER_PORT || 8787);
+const port = Number(process.env.PORT || process.env.SERVER_PORT || 8787);
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });

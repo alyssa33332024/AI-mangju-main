@@ -19,12 +19,14 @@ function hasCompleteGridPrompt(text: string): boolean {
 export function parseShotsFromScript(script: string): ParsedShot[] {
   const shots: ParsedShot[] = [];
   const completeShots: ParsedShot[] = [];
-  const shotRegex = /镜头\s*([0-9]+)[：:]\s*([^\n]+)[\s\S]*?(?=镜头\s*[0-9]+[：:]|$)/g;
+  // 兼容“镜头1: 标题”“镜头 2 标题”“镜头3”后直接换行等格式
+  const shotRegex = /镜头\s*([0-9]+)\s*(?:[：:]\s*([^\n]*))?[\s\S]*?(?=镜头\s*[0-9]+\s*(?:[：:]|$)|$)/g;
 
   let match: RegExpExecArray | null;
   while ((match = shotRegex.exec(script)) !== null) {
     const shotNumber = Number(match[1]);
-    const title = `镜头 ${shotNumber}: ${match[2].trim()}`;
+    const rawTitle = (match[2] || "").trim();
+    const title = rawTitle ? `镜头 ${shotNumber}: ${rawTitle}` : `镜头 ${shotNumber}`;
     const block = match[0];
 
     const imagePromptMatch = block.match(
