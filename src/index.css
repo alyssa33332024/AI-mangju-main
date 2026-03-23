@@ -58,3 +58,21 @@
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
 }
+
+.prompt-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(126, 121, 131, 0.28) transparent;
+}
+
+.prompt-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.prompt-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.prompt-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(126, 121, 131, 0.28);
+  border-radius: 999px;
+}

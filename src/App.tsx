@@ -22,7 +22,9 @@ import {
   Check,
   Plus,
   RefreshCw,
-  Info
+  Info,
+  Trash2,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -45,7 +47,7 @@ const TomatoIcon = ({ className }: { className?: string }) => (
   </div>
 );
 
-const Header = ({ showBack, onBack, title, currentStep = 1, hideSteps = false, hideTitle = false }: { showBack?: boolean, onBack?: () => void, title?: string, currentStep?: number, hideSteps?: boolean, hideTitle?: boolean }) => {
+const Header = ({ showBack, onBack, onHome, onStepClick, canStepNavigate = false, maxReachedStep = 1, title, currentStep = 1, hideSteps = false, hideTitle = false }: { showBack?: boolean, onBack?: () => void, onHome?: () => void, onStepClick?: (step: number) => void, canStepNavigate?: boolean, maxReachedStep?: number, title?: string, currentStep?: number, hideSteps?: boolean, hideTitle?: boolean }) => {
   return (
     <nav className={`${title ? 'sticky' : 'fixed'} top-0 left-0 right-0 z-50 h-20 px-8 flex items-center justify-between bg-transparent`}>
       <div className="flex items-center gap-12">
@@ -58,12 +60,26 @@ const Header = ({ showBack, onBack, title, currentStep = 1, hideSteps = false, h
               <ArrowLeft size={24} />
             </button>
           ) : (
-            <div className="flex items-center gap-3">
+            <button
+              onClick={onHome}
+              className="flex items-center gap-3 cursor-pointer"
+            >
               <TomatoIcon className="w-10 h-10" />
               <span className="text-2xl font-extrabold text-primary font-headline tracking-tight">小番茄</span>
-            </div>
+            </button>
           )}
-          {title && !hideTitle && <span className="text-xl font-extrabold text-primary font-headline tracking-tight">{title}</span>}
+          {title && !hideTitle && (
+            title === '漫剧 Agent' && onBack ? (
+              <button
+                onClick={onBack}
+                className="text-xl font-extrabold text-primary font-headline tracking-tight hover:text-primary-dim transition-colors"
+              >
+                {title}
+              </button>
+            ) : (
+              <span className="text-xl font-extrabold text-primary font-headline tracking-tight">{title}</span>
+            )
+          )}
         </div>
         
         <div className="hidden lg:flex items-center gap-12 text-[15px] font-semibold ml-16">
@@ -74,17 +90,30 @@ const Header = ({ showBack, onBack, title, currentStep = 1, hideSteps = false, h
                 { id: 1, label: '剧本大纲' },
                 { id: 2, label: '分镜图' },
                 { id: 3, label: '分镜视频' }
-              ].map((step) => (
-                <div key={step.id} className={`flex flex-col items-center gap-1 ${step.id > currentStep ? 'opacity-50' : ''}`}>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${step.id <= currentStep ? 'bg-primary text-on-primary' : 'bg-surface-container-highest text-outline'}`}>
+              ].map((step, index, arr) => (
+                <div key={step.id} className="flex items-center gap-3">
+                  <button
+                    onClick={() => canStepNavigate && onStepClick?.(step.id)}
+                    className={`flex items-center gap-2 transition-opacity ${canStepNavigate ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
+                  >
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                      step.id === currentStep
+                        ? 'bg-primary text-on-primary'
+                        : step.id <= maxReachedStep
+                        ? 'bg-primary/15 text-primary'
+                        : 'bg-surface-container-highest text-outline'
+                    }`}>
                       {step.id}
                     </div>
-                    <span className={`text-sm font-bold ${step.id <= currentStep ? 'text-primary' : 'text-outline'}`}>
+                    <span className={`text-sm font-bold ${
+                      step.id === currentStep ? 'text-primary' : step.id <= maxReachedStep ? 'text-primary/90' : 'text-outline'
+                    }`}>
                       {step.label}
                     </span>
-                  </div>
-                  <div className={`h-1 w-16 rounded-full mt-1 ${step.id <= currentStep ? 'bg-primary' : 'bg-surface-container-highest'}`}></div>
+                  </button>
+                  {index < arr.length - 1 && (
+                    <ArrowRight size={14} className={`ml-1 ${step.id < maxReachedStep ? 'text-primary/70' : 'text-outline/60'}`} />
+                  )}
                 </div>
               ))}
             </div>
@@ -99,7 +128,7 @@ const Header = ({ showBack, onBack, title, currentStep = 1, hideSteps = false, h
           <ChevronDown size={16} />
         </div>
         <button className="bg-on-surface text-surface px-4 py-1.5 rounded-full text-xs font-bold tracking-wide hover:bg-black transition-colors">
-          {title ? '会员' : '订阅'}
+          {title ? '会员' : '会员'}
         </button>
         <div className="flex items-center gap-1 text-outline mr-2">
           <button className="p-2 hover:text-on-surface transition-colors relative">
@@ -141,6 +170,69 @@ const Hero = () => {
   );
 };
 
+const MyProjectsSection = ({
+  projects,
+  onOpenProject,
+  onDeleteProject
+}: {
+  projects: SavedProject[];
+  onOpenProject: (projectId: string) => void;
+  onDeleteProject: (projectId: string) => void;
+}) => {
+  return (
+    <section className="max-w-5xl mx-auto px-6 mb-16">
+      <div className="bg-white rounded-[36px] p-8 tonal-shadow border border-surface-container">
+        <div className="flex items-center mb-6">
+          <h2 className="text-2xl font-extrabold text-on-surface font-headline tracking-tight">我的项目</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {projects.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-surface-container-high bg-surface-container-low p-6 text-sm text-on-surface-variant">
+              还没有已保存项目，先在流程里编辑后点击“保存当前项目”。
+            </div>
+          ) : (
+            projects.map((project) => (
+              <div
+                key={project.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpenProject(project.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') onOpenProject(project.id);
+                }}
+                className="relative text-left rounded-2xl border border-surface-container bg-surface-container-low p-4 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer"
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteProject(project.id);
+                  }}
+                  className="absolute top-3 right-3 w-7 h-7 rounded-full bg-surface/85 border border-surface-container-high text-outline hover:text-red-500 hover:border-red-200 transition-colors flex items-center justify-center"
+                  aria-label="删除项目"
+                  title="删除项目"
+                >
+                  <Trash2 size={14} />
+                </button>
+                <img
+                  src={project.coverImage}
+                  alt={`${project.name}封面`}
+                  className="w-full rounded-xl bg-black/10 aspect-video object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="mt-3 px-1">
+                  <p className="text-sm font-bold text-on-surface">{project.name}</p>
+                  <p className="text-xs text-on-surface-variant mt-1">{project.updatedAt}</p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const CreatorSection = ({ onStartCreating }: { onStartCreating: () => void }) => {
   const [prompt, setPrompt] = useState('');
   const [videoStyle, setVideoStyle] = useState('3DCG动画东方奇幻');
@@ -161,7 +253,7 @@ const CreatorSection = ({ onStartCreating }: { onStartCreating: () => void }) =>
   ];
 
   return (
-    <section className="max-w-5xl mx-auto px-6 mb-32">
+    <section className="max-w-5xl mx-auto px-6 mb-14">
       <motion.div 
         key="ai-view"
         initial={{ opacity: 0, scale: 0.98 }}
@@ -256,12 +348,8 @@ const CreatorSection = ({ onStartCreating }: { onStartCreating: () => void }) =>
   );
 };
 
-const GenerationView = ({ onBack, onConfirm, skipLoading = false }: { onBack: () => void, onConfirm: () => void, skipLoading?: boolean }) => {
+const GenerationView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, scriptContent, onScriptChange, onConfirm, skipLoading = false }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, scriptContent: string, onScriptChange: (content: string) => void, onConfirm: () => void, skipLoading?: boolean }) => {
   const [isGenerating, setIsGenerating] = useState(!skipLoading);
-
-  const [scriptContent, setScriptContent] = useState(
-    "【核心梗】\n悲情英雄、惊天阴谋、涅槃复仇、轮回重启\n\n【故事背景】\n取经成功一万年后，三界看似太平，实则天庭与灵山勾结，以“因果”为名，通过收割众生信仰维持永生，众神皆沦为贪婪的食客。曾经的大圣被封为斗战胜佛，却在逐渐察觉真相后，被设计囚禁于幽冥深处。而八戒，这个昔日最没骨气的“呆子”，却在净坛使者的闲职中默默坚守着最后的一丝良知。\n\n【核心冲突】\n八戒偶然发现天庭正筹划一场名为“无生劫”的阴谋，旨在抹除凡间所有关于孙大圣的记忆。为了唤醒被囚的大哥，八戒毅然选择了一场自杀式的反抗。他在三界众神面前，剥落金身，以毕生修为和魂飞魄散为代价，撞开了幽冥之门的裂缝，那一抹残魂化作一滴血泪，落入了孙悟空空洞的眼眸中。\n\n【结局走向】\n八戒之死引发了三界的震颤。曾经那个胆小怕事的猪头消失了，换来的是齐天大圣的怒火重燃。大圣归来，不再是为了取经，而是为了杀穿这虚伪的天庭与灵山，为那个永远喊他“猴哥”的呆子讨回公道。最终，三界秩序崩塌，大圣在废墟中重新确立了“自由”的真义。\n\n【一句话卖点】\n“呆子以命换兄醒，大圣涅槃杀穿三界，只为重开天地！”"
-  );
 
   // Simulate generation completion for demo purposes
   React.useEffect(() => {
@@ -272,7 +360,7 @@ const GenerationView = ({ onBack, onConfirm, skipLoading = false }: { onBack: ()
 
   return (
     <div className="min-h-screen bg-surface flex flex-col font-body">
-      <Header showBack onBack={onBack} title="漫剧 Agent" currentStep={1} />
+      <Header showBack onBack={onBack} onHome={onHome} onStepClick={onStepClick} canStepNavigate={canStepNavigate} maxReachedStep={maxReachedStep} title="漫剧 Agent" currentStep={1} />
 
       {/* Main Content */}
       <main className="flex-1 max-w-5xl mx-auto px-6 pt-24 pb-10 w-full">
@@ -320,7 +408,7 @@ const GenerationView = ({ onBack, onConfirm, skipLoading = false }: { onBack: ()
                 {/* Card Header */}
                 <div className="px-10 pt-10 pb-6">
                   <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-2xl font-extrabold text-on-surface tracking-tight font-headline">剧本正文</h2>
+                    <h2 className="text-2xl font-extrabold text-on-surface tracking-tight font-headline">剧本大纲</h2>
                   </div>
                 </div>
 
@@ -329,7 +417,7 @@ const GenerationView = ({ onBack, onConfirm, skipLoading = false }: { onBack: ()
                   <div className="bg-surface-container-low p-6 rounded-2xl">
                     <textarea 
                       value={scriptContent}
-                      onChange={(e) => setScriptContent(e.target.value)}
+                      onChange={(e) => onScriptChange(e.target.value)}
                       className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-on-surface-variant resize-none p-0 leading-loose font-medium min-h-[400px]"
                     />
                   </div>
@@ -360,7 +448,7 @@ const GenerationView = ({ onBack, onConfirm, skipLoading = false }: { onBack: ()
 
 type ViewState = 'HOME' | 'GENERATING' | 'STUDYING' | 'STORYBOARD' | 'STORYBOARD_VIDEO';
 
-const StudyView = ({ onBack, onComplete }: { onBack: () => void, onComplete: () => void }) => {
+const StudyView = ({ onBack, onHome, onComplete }: { onBack: () => void, onHome: () => void, onComplete: () => void }) => {
   useEffect(() => {
     const timer = setTimeout(() => onComplete(), 3000);
     return () => clearTimeout(timer);
@@ -368,7 +456,7 @@ const StudyView = ({ onBack, onComplete }: { onBack: () => void, onComplete: () 
 
   return (
     <div className="min-h-screen bg-surface flex flex-col font-body">
-      <Header showBack onBack={onBack} title="漫剧 Agent" currentStep={1} />
+      <Header showBack onBack={onBack} onHome={onHome} title="漫剧 Agent" currentStep={1} />
       
       <main className="flex-grow flex flex-col items-center justify-center p-4">
         <div className="flex flex-col items-center max-w-md w-full text-center">
@@ -635,108 +723,234 @@ const SettingsView = ({ onBack, onConfirm }: { onBack: () => void, onConfirm: ()
   );
 };
 
-const StoryboardView = ({ onBack, onConfirm }: { onBack: () => void, onConfirm: () => void }) => {
+type ShotItem = {
+  id: number;
+  title: string;
+  description: string;
+  prompt: string;
+  progress: number;
+  imageUrl: string;
+};
+
+type SavedProject = {
+  id: string;
+  name: string;
+  updatedAt: string;
+  coverImage: string;
+  scriptContent: string;
+  storyboardShots: ShotItem[];
+  storyboardVideoShots: ShotItem[];
+};
+
+const DEFAULT_SCRIPT_CONTENT =
+  "【核心梗】\n悲情英雄、惊天阴谋、涅槃复仇、轮回重启\n\n【故事背景】\n取经成功一万年后，三界看似太平，实则天庭与灵山勾结，以“因果”为名，通过收割众生信仰维持永生，众神皆沦为贪婪的食客。曾经的大圣被封为斗战胜佛，却在逐渐察觉真相后，被设计囚禁于幽冥深处。而八戒，这个昔日最没骨气的“呆子”，却在净坛使者的闲职中默默坚守着最后的一丝良知。\n\n【核心冲突】\n八戒偶然发现天庭正筹划一场名为“无生劫”的阴谋，旨在抹除凡间所有关于孙大圣的记忆。为了唤醒被囚的大哥，八戒毅然选择了一场自杀式的反抗。他在三界众神面前，剥落金身，以毕生修为和魂飞魄散为代价，撞开了幽冥之门的裂缝，那一抹残魂化作一滴血泪，落入了孙悟空空洞的眼眸中。\n\n【结局走向】\n八戒之死引发了三界的震颤。曾经那个胆小怕事的猪头消失了，换来的是齐天大圣的怒火重燃。大圣归来，不再是为了取经，而是为了杀穿这虚伪的天庭与灵山，为那个永远喊他“猴哥”的呆子讨回公道。最终，三界秩序崩塌，大圣在废墟中重新确立了“自由”的真义。\n\n【一句话卖点】\n“呆子以命换兄醒，大圣涅槃杀穿三界，只为重开天地！”";
+
+const DEFAULT_STORYBOARD_SHOTS: ShotItem[] = [
+  { id: 1, title: '镜头 1: 城市远景', description: '未来感十足的城市天际线，霓虹灯光在细雨中闪烁。', prompt: '未来感十足的城市天际线，霓虹灯光在细雨中闪烁。', progress: 100, imageUrl: 'https://picsum.photos/seed/storyboard-1/1280/720' },
+  { id: 2, title: '镜头 2: 主角特写', description: '主角在喧闹的街道中心停下，眼神流露出迷茫。', prompt: '主角在喧闹的街道中心停下，眼神流露出迷茫。', progress: 100, imageUrl: 'https://picsum.photos/seed/storyboard-2/1280/720' },
+  { id: 3, title: '镜头 3: 街道细节', description: '积水中的倒影被急速驶过的悬浮车溅开。', prompt: '积水中的倒影被急速驶过的悬浮车溅开。', progress: 100, imageUrl: 'https://picsum.photos/seed/storyboard-3/1280/720' },
+  { id: 4, title: '镜头 4: 仰视视角', description: '巨大的全息广告牌投射出刺眼的光芒。', prompt: '巨大的全息广告牌投射出刺眼的光芒。', progress: 100, imageUrl: 'https://picsum.photos/seed/storyboard-4/1280/720' }
+];
+
+const DEFAULT_STORYBOARD_VIDEO_SHOTS: ShotItem[] = [
+  { id: 1, title: '镜头 1: 城市远景', description: '未来感十足的城市天际线，霓虹灯光在细雨中闪烁。', prompt: '未来感十足的城市天际线，霓虹灯光在细雨中闪烁。', progress: 100, imageUrl: 'https://picsum.photos/seed/storyboard-video-1/1280/720' },
+  { id: 2, title: '镜头 2: 主角特写', description: '主角在喧闹的街道中心停下，眼神流露出迷茫。', prompt: '主角在喧闹的街道中心停下，眼神流露出迷茫。', progress: 100, imageUrl: 'https://picsum.photos/seed/storyboard-video-2/1280/720' },
+  { id: 3, title: '镜头 3: 街道细节', description: '积水中的倒影被急速驶过的悬浮车溅开。', prompt: '积水中的倒影被急速驶过的悬浮车溅开。', progress: 100, imageUrl: 'https://picsum.photos/seed/storyboard-video-3/1280/720' },
+  { id: 4, title: '镜头 4: 仰视视角', description: '巨大的全息广告牌投射出刺眼的光芒。', prompt: '巨大的全息广告牌投射出刺眼的光芒。', progress: 100, imageUrl: 'https://picsum.photos/seed/storyboard-video-4/1280/720' }
+];
+
+const downloadImage = async (url: string, fileName: string) => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch (error) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+};
+
+const StoryboardCard = ({
+  item,
+  isExpanded,
+  isZoomed,
+  isRegenerating,
+  onTogglePrompt,
+  onPromptChange,
+  onToggleZoom,
+  onRegenerate,
+  onDownload
+}: {
+  item: ShotItem;
+  isExpanded: boolean;
+  isZoomed: boolean;
+  isRegenerating: boolean;
+  onTogglePrompt: () => void;
+  onPromptChange: (value: string) => void;
+  onToggleZoom: () => void;
+  onRegenerate: () => void;
+  onDownload: () => void;
+}) => {
+  const strokeOffset = 175.9 * (1 - item.progress / 100);
+
+  return (
+    <div className={`flex flex-col gap-3 transition-all duration-300 ${isZoomed ? 'md:col-span-2 lg:col-span-2' : ''}`}>
+      <div
+        className={`rounded-2xl relative overflow-hidden group shadow-[0px_20px_40px_rgba(110,59,216,0.03)] border transition-all cursor-pointer ${
+          isZoomed
+            ? 'border-primary/40 ring-2 ring-primary/15 min-h-[360px]'
+            : 'border-white/50 hover:border-primary/20 aspect-video'
+        }`}
+        onClick={onToggleZoom}
+      >
+        {item.progress < 100 || isRegenerating ? (
+          <div className="w-full h-full bg-surface-container-low flex items-center justify-center">
+            <div className="relative flex flex-col items-center gap-3">
+              {isRegenerating ? (
+                <RefreshCw size={16} className="animate-spin text-primary/85" />
+              ) : (
+                <div className="relative w-16 h-16">
+                  <svg className="w-full h-full">
+                    <circle className="text-primary/10" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="4"></circle>
+                    <circle
+                      className="text-primary progress-ring-circle"
+                      cx="32"
+                      cy="32"
+                      fill="transparent"
+                      r="28"
+                      stroke="currentColor"
+                      strokeDasharray="175.9"
+                      strokeDashoffset={strokeOffset}
+                      strokeLinecap="round"
+                      strokeWidth="4"
+                    ></circle>
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-primary">
+                    {`${item.progress}%`}
+                  </div>
+                </div>
+              )}
+              <span className="text-sm font-bold text-primary-dim tracking-wider">
+                {isRegenerating ? <span className="text-xs font-semibold tracking-normal">重新生成中...</span> : '生成中...'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <>
+            <img
+              alt={item.title}
+              className={`w-full h-full transition-all duration-300 ${isZoomed ? 'object-contain bg-surface-container-lowest' : 'object-cover'}`}
+              src={item.imageUrl}
+              referrerPolicy="no-referrer"
+            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDownload();
+              }}
+              className="absolute bottom-2 right-2 min-w-6 h-5 px-1.5 rounded-md border border-surface-container-high bg-surface/80 text-on-surface/75 transition-all duration-200 hover:bg-surface hover:-translate-y-0.5 flex items-center justify-center"
+              aria-label="下载图片"
+              title="下载图片"
+            >
+              <span className="text-xs leading-none">↓</span>
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="px-2">
+        <h3 className="font-bold text-on-surface text-sm">{item.title}</h3>
+      </div>
+
+      <div className="mx-2">
+        <button
+          onClick={onTogglePrompt}
+          className="flex items-center gap-1 text-xs font-semibold text-on-surface/65 hover:text-on-surface/85 transition-colors"
+        >
+          <span>提示词</span>
+          <ChevronDown size={13} className={`transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+        </button>
+        {isExpanded && (
+          <div className="mt-1.5 bg-surface-container-low/70 rounded-lg border border-surface-container/70 p-2.5">
+            <div className="relative">
+              <textarea
+                value={item.prompt}
+                onChange={(e) => onPromptChange(e.target.value)}
+                className="w-full min-h-20 max-h-28 overflow-y-auto prompt-scrollbar text-xs leading-relaxed rounded-md border border-surface-container-high/70 bg-surface/80 px-2.5 py-2 pr-8 pb-7 resize-none focus:outline-none focus:ring-1 focus:ring-primary/15"
+              />
+              <button
+                onClick={onRegenerate}
+                className="absolute bottom-4 right-2 text-primary/65 hover:text-primary/85 transition-colors"
+                aria-label="重新生成"
+                title="重新生成"
+              >
+                <RefreshCw size={11} className={isRegenerating ? 'animate-spin' : ''} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const StoryboardView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, shots, onShotsChange, onConfirm }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, shots: ShotItem[], onShotsChange: (shots: ShotItem[]) => void, onConfirm: () => void }) => {
+  const [expandedPromptId, setExpandedPromptId] = useState<number | null>(1);
+  const [zoomedShotId, setZoomedShotId] = useState<number | null>(null);
+  const [regeneratingIds, setRegeneratingIds] = useState<number[]>([]);
+
+  const regenerateShot = (id: number) => {
+    setRegeneratingIds((prev) => [...prev, id]);
+    setTimeout(() => {
+      onShotsChange(
+        shots.map((item) =>
+          item.id === id
+            ? { ...item, progress: 100, imageUrl: `https://picsum.photos/seed/storyboard-${id}-${Date.now()}/1280/720` }
+            : item
+        )
+      );
+      setRegeneratingIds((prev) => prev.filter((currentId) => currentId !== id));
+    }, 1200);
+  };
+
   return (
     <div className="min-h-screen bg-surface-bright flex flex-col font-body text-on-surface">
-      <Header showBack onBack={onBack} title="漫剧 Agent" currentStep={2} />
+      <Header showBack onBack={onBack} onHome={onHome} onStepClick={onStepClick} canStepNavigate={canStepNavigate} maxReachedStep={maxReachedStep} title="漫剧 Agent" currentStep={2} />
       
       <main className="flex-1 px-12 pt-2 pb-12">
-        {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-extrabold font-headline text-on-surface tracking-tight inline-block relative">
             分镜图
             <div className="absolute -bottom-2 left-0 w-full h-1 bg-primary rounded-full opacity-30"></div>
           </h1>
-          <p className="text-on-surface-variant mt-4 font-medium max-w-2xl">
-            正在根据您的剧本生成对应的视觉分镜图。请稍候，我们将为您创建高品质的创意镜头。
-          </p>
         </div>
 
-        {/* Storyboard Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Card 1 (85%) */}
-          <div className="flex flex-col gap-3">
-            <div className="aspect-video bg-surface-container-low rounded-2xl flex items-center justify-center relative overflow-hidden group shadow-[0px_20px_40px_rgba(110,59,216,0.03)] border border-white/50">
-              <div className="relative flex flex-col items-center gap-3">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full">
-                    <circle className="text-primary/10" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="4"></circle>
-                    <circle className="text-primary progress-ring-circle" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeDasharray="175.9" strokeDashoffset="26.4" strokeLinecap="round" strokeWidth="4"></circle>
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-primary">85%</div>
-                </div>
-                <span className="text-sm font-bold text-primary-dim tracking-wider">生成中...</span>
-              </div>
-            </div>
-            <div className="px-2">
-              <h3 className="font-bold text-on-surface text-sm">镜头 1: 城市远景</h3>
-              <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">未来感十足的城市天际线，霓虹灯光在细雨中闪烁。</p>
-            </div>
-          </div>
-
-          {/* Card 2 (62%) */}
-          <div className="flex flex-col gap-3">
-            <div className="aspect-video bg-surface-container-low rounded-2xl flex items-center justify-center relative overflow-hidden group shadow-[0px_20px_40px_rgba(110,59,216,0.03)] border border-white/50">
-              <div className="relative flex flex-col items-center gap-3">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full">
-                    <circle className="text-primary/10" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="4"></circle>
-                    <circle className="text-primary progress-ring-circle" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeDasharray="175.9" strokeDashoffset="66.8" strokeLinecap="round" strokeWidth="4"></circle>
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-primary">62%</div>
-                </div>
-                <span className="text-sm font-bold text-primary-dim tracking-wider">生成中...</span>
-              </div>
-            </div>
-            <div className="px-2">
-              <h3 className="font-bold text-on-surface text-sm">镜头 2: 主角特写</h3>
-              <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">主角在喧闹的街道中心停下，眼神流露出迷茫。</p>
-            </div>
-          </div>
-
-          {/* Card 3 (45%) */}
-          <div className="flex flex-col gap-3">
-            <div className="aspect-video bg-surface-container-low rounded-2xl flex items-center justify-center relative overflow-hidden group shadow-[0px_20px_40px_rgba(110,59,216,0.03)] border border-white/50">
-              <div className="relative flex flex-col items-center gap-3">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full">
-                    <circle className="text-primary/10" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="4"></circle>
-                    <circle className="text-primary progress-ring-circle" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeDasharray="175.9" strokeDashoffset="96.7" strokeLinecap="round" strokeWidth="4"></circle>
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-primary">45%</div>
-                </div>
-                <span className="text-sm font-bold text-primary-dim tracking-wider">生成中...</span>
-              </div>
-            </div>
-            <div className="px-2">
-              <h3 className="font-bold text-on-surface text-sm">镜头 3: 街道细节</h3>
-              <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">积水中的倒影被急速驶过的悬浮车溅开。</p>
-            </div>
-          </div>
-
-          {/* Card 4 (30%) */}
-          <div className="flex flex-col gap-3">
-            <div className="aspect-video bg-surface-container-low rounded-2xl flex items-center justify-center relative overflow-hidden group shadow-[0px_20px_40px_rgba(110,59,216,0.03)] border border-white/50">
-              <div className="relative flex flex-col items-center gap-3">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full">
-                    <circle className="text-primary/10" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="4"></circle>
-                    <circle className="text-primary progress-ring-circle" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeDasharray="175.9" strokeDashoffset="123.1" strokeLinecap="round" strokeWidth="4"></circle>
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-primary">30%</div>
-                </div>
-                <span className="text-sm font-bold text-primary-dim tracking-wider">生成中...</span>
-              </div>
-            </div>
-            <div className="px-2">
-              <h3 className="font-bold text-on-surface text-sm">镜头 4: 仰视视角</h3>
-              <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">巨大的全息广告牌投射出刺眼的光芒。</p>
-            </div>
-          </div>
+          {shots.map((item) => (
+            <StoryboardCard
+              key={item.id}
+              item={item}
+              isExpanded={expandedPromptId === item.id}
+              isZoomed={zoomedShotId === item.id}
+              isRegenerating={regeneratingIds.includes(item.id)}
+              onTogglePrompt={() => setExpandedPromptId((prev) => (prev === item.id ? null : item.id))}
+              onPromptChange={(value) =>
+                onShotsChange(shots.map((shot) => (shot.id === item.id ? { ...shot, prompt: value } : shot)))
+              }
+              onToggleZoom={() => setZoomedShotId((prev) => (prev === item.id ? null : item.id))}
+              onRegenerate={() => regenerateShot(item.id)}
+              onDownload={() => downloadImage(item.imageUrl, `storyboard-shot-${item.id}.png`)}
+            />
+          ))}
         </div>
       </main>
 
-      {/* Bottom Action */}
       <div className="px-12 py-6 bg-surface border-t border-surface-container flex justify-end items-center sticky bottom-0 z-10">
         <button 
           onClick={onConfirm}
@@ -747,115 +961,72 @@ const StoryboardView = ({ onBack, onConfirm }: { onBack: () => void, onConfirm: 
         </button>
       </div>
 
-      {/* Decorative background elements */}
       <div className="fixed top-[20%] right-[-100px] w-[300px] h-[300px] bg-primary/5 rounded-full blur-3xl -z-10"></div>
       <div className="fixed bottom-[10%] left-[-100px] w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl -z-10"></div>
     </div>
   );
 };
 
-const StoryboardVideoView = ({ onBack, onConfirm }: { onBack: () => void, onConfirm: () => void }) => {
+const StoryboardVideoView = ({ onBack, onHome, onStepClick, canStepNavigate, maxReachedStep, shots, onShotsChange, onConfirm }: { onBack: () => void, onHome: () => void, onStepClick: (step: number) => void, canStepNavigate: boolean, maxReachedStep: number, shots: ShotItem[], onShotsChange: (shots: ShotItem[]) => void, onConfirm: () => void }) => {
+  const [expandedPromptId, setExpandedPromptId] = useState<number | null>(1);
+  const [zoomedShotId, setZoomedShotId] = useState<number | null>(null);
+  const [regeneratingIds, setRegeneratingIds] = useState<number[]>([]);
+
+  const regenerateShot = (id: number) => {
+    setRegeneratingIds((prev) => [...prev, id]);
+    setTimeout(() => {
+      onShotsChange(
+        shots.map((item) =>
+          item.id === id
+            ? { ...item, progress: 100, imageUrl: `https://picsum.photos/seed/storyboard-video-${id}-${Date.now()}/1280/720` }
+            : item
+        )
+      );
+      setRegeneratingIds((prev) => prev.filter((currentId) => currentId !== id));
+    }, 1200);
+  };
+
   return (
     <div className="min-h-screen bg-surface-bright flex flex-col font-body text-on-surface">
-      <Header showBack onBack={onBack} title="漫剧 Agent" currentStep={3} />
+      <Header showBack onBack={onBack} onHome={onHome} onStepClick={onStepClick} canStepNavigate={canStepNavigate} maxReachedStep={maxReachedStep} title="漫剧 Agent" currentStep={3} />
       
       <main className="flex-1 px-12 pt-2 pb-12">
-        {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-extrabold font-headline text-on-surface tracking-tight inline-block relative">
             分镜视频
             <div className="absolute -bottom-2 left-0 w-full h-1 bg-primary rounded-full opacity-30"></div>
           </h1>
-          <p className="text-on-surface-variant mt-4 font-medium max-w-2xl">
-            正在根据您的剧本生成对应的分镜视频。请稍候，我们将为您创建高品质的创意镜头。
-          </p>
         </div>
 
-        {/* Storyboard Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Card 1 (85%) */}
-          <div className="flex flex-col gap-3">
-            <div className="aspect-video bg-surface-container-low rounded-2xl flex items-center justify-center relative overflow-hidden group shadow-[0px_20px_40px_rgba(110,59,216,0.03)] border border-white/50">
-              <div className="relative flex flex-col items-center gap-3">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full">
-                    <circle className="text-primary/10" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="4"></circle>
-                    <circle className="text-primary progress-ring-circle" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeDasharray="175.9" strokeDashoffset="26.4" strokeLinecap="round" strokeWidth="4"></circle>
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-primary">85%</div>
-                </div>
-                <span className="text-sm font-bold text-primary-dim tracking-wider">生成中...</span>
-              </div>
-            </div>
-            <div className="px-2">
-              <h3 className="font-bold text-on-surface text-sm">镜头 1: 城市远景</h3>
-              <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">未来感十足的城市天际线，霓虹灯光在细雨中闪烁。</p>
-            </div>
-          </div>
-
-          {/* Card 2 (62%) */}
-          <div className="flex flex-col gap-3">
-            <div className="aspect-video bg-surface-container-low rounded-2xl flex items-center justify-center relative overflow-hidden group shadow-[0px_20px_40px_rgba(110,59,216,0.03)] border border-white/50">
-              <div className="relative flex flex-col items-center gap-3">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full">
-                    <circle className="text-primary/10" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="4"></circle>
-                    <circle className="text-primary progress-ring-circle" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeDasharray="175.9" strokeDashoffset="66.8" strokeLinecap="round" strokeWidth="4"></circle>
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-primary">62%</div>
-                </div>
-                <span className="text-sm font-bold text-primary-dim tracking-wider">生成中...</span>
-              </div>
-            </div>
-            <div className="px-2">
-              <h3 className="font-bold text-on-surface text-sm">镜头 2: 主角特写</h3>
-              <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">主角在喧闹的街道中心停下，眼神流露出迷茫。</p>
-            </div>
-          </div>
-
-          {/* Card 3 (45%) */}
-          <div className="flex flex-col gap-3">
-            <div className="aspect-video bg-surface-container-low rounded-2xl flex items-center justify-center relative overflow-hidden group shadow-[0px_20px_40px_rgba(110,59,216,0.03)] border border-white/50">
-              <div className="relative flex flex-col items-center gap-3">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full">
-                    <circle className="text-primary/10" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="4"></circle>
-                    <circle className="text-primary progress-ring-circle" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeDasharray="175.9" strokeDashoffset="96.7" strokeLinecap="round" strokeWidth="4"></circle>
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-primary">45%</div>
-                </div>
-                <span className="text-sm font-bold text-primary-dim tracking-wider">生成中...</span>
-              </div>
-            </div>
-            <div className="px-2">
-              <h3 className="font-bold text-on-surface text-sm">镜头 3: 街道细节</h3>
-              <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">积水中的倒影被急速驶过的悬浮车溅开。</p>
-            </div>
-          </div>
-
-          {/* Card 4 (30%) */}
-          <div className="flex flex-col gap-3">
-            <div className="aspect-video bg-surface-container-low rounded-2xl flex items-center justify-center relative overflow-hidden group shadow-[0px_20px_40px_rgba(110,59,216,0.03)] border border-white/50">
-              <div className="relative flex flex-col items-center gap-3">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full">
-                    <circle className="text-primary/10" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="4"></circle>
-                    <circle className="text-primary progress-ring-circle" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeDasharray="175.9" strokeDashoffset="123.1" strokeLinecap="round" strokeWidth="4"></circle>
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-primary">30%</div>
-                </div>
-                <span className="text-sm font-bold text-primary-dim tracking-wider">生成中...</span>
-              </div>
-            </div>
-            <div className="px-2">
-              <h3 className="font-bold text-on-surface text-sm">镜头 4: 仰视视角</h3>
-              <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">巨大的全息广告牌投射出刺眼的光芒。</p>
-            </div>
-          </div>
+          {shots.map((item) => (
+            <StoryboardCard
+              key={item.id}
+              item={item}
+              isExpanded={expandedPromptId === item.id}
+              isZoomed={zoomedShotId === item.id}
+              isRegenerating={regeneratingIds.includes(item.id)}
+              onTogglePrompt={() => setExpandedPromptId((prev) => (prev === item.id ? null : item.id))}
+              onPromptChange={(value) =>
+                onShotsChange(shots.map((shot) => (shot.id === item.id ? { ...shot, prompt: value } : shot)))
+              }
+              onToggleZoom={() => setZoomedShotId((prev) => (prev === item.id ? null : item.id))}
+              onRegenerate={() => regenerateShot(item.id)}
+              onDownload={() => downloadImage(item.imageUrl, `storyboard-video-shot-${item.id}.png`)}
+            />
+          ))}
         </div>
       </main>
 
-      {/* Decorative background elements */}
+      <div className="px-12 py-6 bg-surface border-t border-surface-container flex justify-end items-center sticky bottom-0 z-10">
+        <button 
+          onClick={onConfirm}
+          className="bg-on-surface hover:bg-black text-surface px-10 py-4 rounded-2xl font-bold tracking-widest text-base shadow-xl active:scale-95 transition-all"
+        >
+          完成
+        </button>
+      </div>
+
       <div className="fixed top-[20%] right-[-100px] w-[300px] h-[300px] bg-primary/5 rounded-full blur-3xl -z-10"></div>
       <div className="fixed bottom-[10%] left-[-100px] w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl -z-10"></div>
     </div>
@@ -865,6 +1036,68 @@ const StoryboardVideoView = ({ onBack, onConfirm }: { onBack: () => void, onConf
 export default function App() {
   const [view, setView] = useState<ViewState>('HOME');
   const [hasGeneratedScript, setHasGeneratedScript] = useState(false);
+  const [hasUnlockedStepNav, setHasUnlockedStepNav] = useState(false);
+  const [maxReachedStep, setMaxReachedStep] = useState(1);
+  const [scriptContent, setScriptContent] = useState(DEFAULT_SCRIPT_CONTENT);
+  const [storyboardShots, setStoryboardShots] = useState<ShotItem[]>(DEFAULT_STORYBOARD_SHOTS);
+  const [storyboardVideoShots, setStoryboardVideoShots] = useState<ShotItem[]>(DEFAULT_STORYBOARD_VIDEO_SHOTS);
+  const [projects, setProjects] = useState<SavedProject[]>([]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('ai-mangju-projects');
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as SavedProject[];
+      if (Array.isArray(parsed)) setProjects(parsed);
+    } catch (error) {
+      console.error('Failed to parse saved projects:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('ai-mangju-projects', JSON.stringify(projects));
+  }, [projects]);
+
+  const saveCurrentProject = () => {
+    const now = new Date();
+    const updatedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const project: SavedProject = {
+      id: `${Date.now()}`,
+      name: '八戒之死 - 最终成片',
+      updatedAt,
+      coverImage: storyboardVideoShots[0]?.imageUrl || storyboardShots[0]?.imageUrl || 'https://picsum.photos/seed/final-video-poster/1200/675',
+      scriptContent,
+      storyboardShots,
+      storyboardVideoShots
+    };
+    setProjects((prev) => [project, ...prev]);
+  };
+
+  const openProject = (projectId: string) => {
+    const project = projects.find((item) => item.id === projectId);
+    if (!project) return;
+    setScriptContent(project.scriptContent);
+    setStoryboardShots(project.storyboardShots);
+    setStoryboardVideoShots(project.storyboardVideoShots);
+    setHasGeneratedScript(true);
+    setHasUnlockedStepNav(true);
+    setMaxReachedStep(3);
+    setView('GENERATING');
+  };
+
+  const deleteProject = (projectId: string) => {
+    setProjects((prev) => prev.filter((item) => item.id !== projectId));
+  };
+
+  const goHome = () => {
+    setView('HOME');
+  };
+  const goToStep = (step: number) => {
+    if (!hasUnlockedStepNav) return;
+    if (step === 1) setView('GENERATING');
+    if (step === 2) setView('STORYBOARD');
+    if (step === 3) setView('STORYBOARD_VIDEO');
+  };
 
   const renderView = () => {
     switch (view) {
@@ -872,12 +1105,17 @@ export default function App() {
         return (
           <GenerationView 
             skipLoading={hasGeneratedScript}
-            onBack={() => {
-              setView('HOME');
-              setHasGeneratedScript(false);
-            }} 
+            onBack={goHome}
+            onHome={goHome}
+            onStepClick={goToStep}
+            canStepNavigate={hasUnlockedStepNav}
+            maxReachedStep={maxReachedStep}
+            scriptContent={scriptContent}
+            onScriptChange={setScriptContent}
             onConfirm={() => {
               setHasGeneratedScript(true);
+              setHasUnlockedStepNav(true);
+              setMaxReachedStep((prev) => Math.max(prev, 2));
               setView('STORYBOARD');
             }}
           />
@@ -886,14 +1124,32 @@ export default function App() {
         return (
           <StoryboardView 
             onBack={() => setView('GENERATING')} 
-            onConfirm={() => setView('STORYBOARD_VIDEO')}
+            onHome={goHome}
+            onStepClick={goToStep}
+            canStepNavigate={hasUnlockedStepNav}
+            maxReachedStep={maxReachedStep}
+            shots={storyboardShots}
+            onShotsChange={setStoryboardShots}
+            onConfirm={() => {
+              setMaxReachedStep((prev) => Math.max(prev, 3));
+              setView('STORYBOARD_VIDEO');
+            }}
           />
         );
       case 'STORYBOARD_VIDEO':
         return (
           <StoryboardVideoView 
             onBack={() => setView('STORYBOARD')} 
-            onConfirm={() => setView('HOME')}
+            onHome={goHome}
+            onStepClick={goToStep}
+            canStepNavigate={hasUnlockedStepNav}
+            maxReachedStep={maxReachedStep}
+            shots={storyboardVideoShots}
+            onShotsChange={setStoryboardVideoShots}
+            onConfirm={() => {
+              saveCurrentProject();
+              setView('HOME');
+            }}
           />
         );
       default:
@@ -903,7 +1159,20 @@ export default function App() {
             
             <main>
               <Hero />
-              <CreatorSection onStartCreating={() => setView('GENERATING')} />
+              <CreatorSection onStartCreating={() => {
+                setHasGeneratedScript(false);
+                setHasUnlockedStepNav(false);
+                setMaxReachedStep(1);
+                setScriptContent(DEFAULT_SCRIPT_CONTENT);
+                setStoryboardShots(DEFAULT_STORYBOARD_SHOTS);
+                setStoryboardVideoShots(DEFAULT_STORYBOARD_VIDEO_SHOTS);
+                setView('GENERATING');
+              }} />
+              <MyProjectsSection
+                projects={projects}
+                onOpenProject={openProject}
+                onDeleteProject={deleteProject}
+              />
             </main>
 
             <footer className="py-12 text-center text-slate-300 text-sm font-medium border-t border-slate-100">
