@@ -1,0 +1,5 @@
+{
+  "name": "Little Tomato - Short Drama Agent",
+  "description": "An AI-powered platform for generating short dramas from scripts using the Seedance 2.0 model.",
+  "requestFramePermissions": []
+}
