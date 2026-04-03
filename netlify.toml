@@ -1,6 +1,5 @@
-# Repo root = site root. Overrides mistaken UI "Base directory" (e.g. API URLs).
+# 在 Netlify 控制台里「Base directory」须留空；后端地址用环境变量 VITE_API_BASE_URL，勿写进 base。
 [build]
-base = "."
 command = "npm run build"
 publish = "dist"
 
