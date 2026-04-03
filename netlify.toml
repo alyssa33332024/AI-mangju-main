@@ -1,4 +1,6 @@
+# Repo root = site root. Overrides mistaken UI "Base directory" (e.g. API URLs).
 [build]
+base = "."
 command = "npm run build"
 publish = "dist"
 
