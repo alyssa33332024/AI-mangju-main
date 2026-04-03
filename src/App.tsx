@@ -176,7 +176,7 @@ const Hero = () => {
         transition={{ delay: 0.1 }}
         className="text-xl text-outline font-medium"
       >
-        在这里，你的创意将通过大语言模型转化为精彩绝伦的剧本。
+        在这里，你的创意将通过多模态模型转化为精彩绝伦的创意视频。
       </motion.p>
     </div>
   );
