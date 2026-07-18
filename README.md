@@ -2,25 +2,25 @@
 
 An AI-powered web platform for automated comic drama generation.
 
-This platform transforms creative ideas into complete AI-generated comic dramas through an end-to-end workflow, including script generation, character image generation, scene image generation, and comic storyboard generation. It enables creators to efficiently produce high-quality comic content with minimal manual effort.
+The platform transforms creative ideas into complete AI-generated comic dramas through an end-to-end workflow, including script generation, character image generation, scene image generation, and comic storyboard generation. It enables creators to efficiently produce high-quality comic drama content with minimal manual effort.
 
 ## Core Features
 
 ### 📝 AI Script Generation
 
-Generate complete comic drama scripts from simple prompts, story ideas, or themes.
+Generate complete scripts from simple prompts, story ideas, or creative concepts.
 
 ### 👤 AI Character Image Generation
 
-Automatically generate consistent AI character images that remain visually coherent throughout the entire story.
+Automatically generate consistent AI character images for the entire story.
 
 ### 🌆 AI Scene Image Generation
 
-Generate high-quality scene illustrations based on the script, narrative context, and visual style.
+Generate high-quality scene illustrations that align with the script and narrative context.
 
 ### 🎬 AI Comic Storyboard Generation
 
-Automatically convert scripts into comic storyboards, including:
+Automatically convert scripts into comic-style storyboards, including:
 
 * Scene segmentation
 * Panel sequencing
@@ -44,48 +44,6 @@ Scene Image Generation
 Comic Storyboard Generation
       ↓
 AI Comic Drama
-```
-
-## Technology Stack
-
-* Frontend: React + TypeScript
-* Runtime: Node.js
-* AI Model: Gemini API
-* Styling: Tailwind CSS
-
-## Run Locally
-
-### Prerequisites
-
-* Node.js
-* Gemini API Key
-
-### Installation
-
-1. Install dependencies
-
-```bash
-npm install
-```
-
-2. Configure environment variables
-
-Create a `.env.local` file:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-3. Start the development server
-
-```bash
-npm run dev
-```
-
-4. Open the local application
-
-```text
-http://localhost:5173
 ```
 
 ## Vision
