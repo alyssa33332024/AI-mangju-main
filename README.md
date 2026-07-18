@@ -1,60 +1,56 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# AI Comic Drama Platform
 
-# AI Comic Drama Studio
+An AI-powered web platform for automated comic drama generation.
 
-An AI-powered platform for automated comic drama production.
-
-This platform transforms creative ideas into complete comic dramas through an end-to-end AI workflow, including script generation, character design, scene creation, and storyboard planning. Creators can generate production-ready comic content with minimal manual effort.
+This platform transforms creative ideas into complete AI-generated comic dramas through an end-to-end workflow, including script generation, character image generation, scene image generation, and comic storyboard generation. It enables creators to efficiently produce high-quality comic content with minimal manual effort.
 
 ## Core Features
 
 ### 📝 AI Script Generation
 
-Generate complete story scripts from simple ideas, themes, or story outlines.
+Generate complete comic drama scripts from simple prompts, story ideas, or themes.
 
-### 👤 AI Character Creation
+### 👤 AI Character Image Generation
 
-Automatically create character profiles, personalities, and consistent character images for the entire story.
+Automatically generate consistent AI character images that remain visually coherent throughout the entire story.
 
-### 🌆 AI Scene Generation
+### 🌆 AI Scene Image Generation
 
-Generate scene concepts and visual assets that match the narrative context and story progression.
+Generate high-quality scene illustrations based on the script, narrative context, and visual style.
 
-### 🎬 AI Storyboard Planning
+### 🎬 AI Comic Storyboard Generation
 
-Automatically convert scripts into comic-style storyboards, including:
+Automatically convert scripts into comic storyboards, including:
 
 * Scene segmentation
-* Shot planning
-* Character actions
+* Panel sequencing
+* Character placement
 * Dialogue allocation
-* Visual composition suggestions
+* Shot composition
 
-### 📚 End-to-End Comic Production Workflow
+### 📚 End-to-End AI Comic Drama Workflow
 
-From idea to storyboard:
+From idea to finished comic drama:
 
 ```text
 Idea / Prompt
       ↓
 AI Script Generation
       ↓
-Character Design
+Character Image Generation
       ↓
-Scene Generation
+Scene Image Generation
       ↓
-Storyboard Planning
+Comic Storyboard Generation
       ↓
-Comic Drama Production
+AI Comic Drama
 ```
 
 ## Technology Stack
 
 * Frontend: React + TypeScript
 * Runtime: Node.js
-* AI Models: Gemini API
+* AI Model: Gemini API
 * Styling: Tailwind CSS
 
 ## Run Locally
@@ -94,10 +90,4 @@ http://localhost:5173
 
 ## Vision
 
-Our goal is to build an intelligent comic production platform that enables creators to automatically generate scripts, characters, scenes, and storyboard sequences, significantly reducing the cost and complexity of comic drama creation.
-
-## AI Studio
-
-View the application in AI Studio:
-
-https://ai.studio/apps/a62877c8-d612-4493-ab22-0158e673c7ac
+Our vision is to build an end-to-end AI comic drama platform that empowers creators to automatically generate scripts, character images, scene images, and storyboard sequences, making comic drama production faster, more efficient, and more accessible.
