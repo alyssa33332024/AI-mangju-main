@@ -2,6 +2,8 @@
 
 An AI-powered web platform for automated comic drama generation.
 
+网站地址：https://ai-mangju-main-20260324052902.netlify.app/
+
 This platform transforms creative ideas into complete AI-generated comic dramas through an end-to-end workflow, including script generation, character image generation, scene image generation, and comic storyboard generation. It enables creators to efficiently produce high-quality comic content with minimal manual effort.
 
 ## Core Features
